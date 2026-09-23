@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>String & Item Wrapper Tool</title>
+    <script>
+        // Apply the saved preference before rendering; first-time visits use dark mode.
+        try {
+            document.documentElement.classList.toggle('dark', localStorage.getItem('wrapcraft-theme') !== 'light');
+        } catch (error) {
+            // Keep the default theme when browser storage is unavailable.
+        }
+    </script>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root { color-scheme: light; }
+        :root.dark { color-scheme: dark; }
+
+        /* Custom scrollbar for clean output viewing */
+        textarea::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background-color: rgba(156, 163, 175, 0.4);
+            border-radius: 3px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(156, 163, 175, 0.7);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-200">
+
+    <!-- Navigation / Header -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-brand-600 text-white p-2.5 rounded-xl shadow-md shadow-brand-500/20">
+                    <i class="fa-solid font-mono text-lg font-bold">&lt;/&gt;</i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-none text-slate-900 dark:text-white">WrapCraft</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">String & Item Formatter Tool</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="themeToggleBtn" type="button" aria-label="Switch to light mode" title="Switch to light mode" class="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                    <i id="themeToggleIcon" class="fa-solid fa-sun" aria-hidden="true"></i>
+                    <span id="themeToggleLabel" class="hidden sm:inline">Light mode</span>
+                </button>
+                <button id="clearAllBtn" class="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 transition-colors flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800/50">
+                    <i class="fa-solid fa-trash-can"></i>
+                    <span>Reset All</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- Grid Layout for Input / Controls / Output -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- Input Column (Left - 5 Cols) -->
+            <div class="lg:col-span-5 flex flex-col gap-4">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <label for="rawInput" class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-pen-to-square text-brand-600"></i>
+                            Input Items
+                        </label>
+                        <span id="inputCount" class="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700/60 text-slate-600 dark:text-slate-300 font-medium">
+                            0 items detected
+                        </span>
+                    </div>
+
+                    <textarea id="rawInput" rows="12" 
+                        class="w-full p-3.5 text-sm font-mono bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition duration-150 resize-y text-slate-800 dark:text-slate-100 placeholder-slate-400"
+                        placeholder="Paste or type items here...&#10;Examples:&#10;test001 test002 test003&#10;or separate by comma/newline"></textarea>
+
+                    <!-- Quick Sample Buttons -->
+                    <div class="mt-3 flex flex-wrap gap-2 items-center text-xs">
+                        <span class="text-slate-400 font-medium">Samples:</span>
+                        <button class="sample-btn px-2 py-1 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md transition" data-sample="test001 test002 test003 test004">Space Separated</button>
+                        <button class="sample-btn px-2 py-1 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md transition" data-sample="1001, 1002, 1003, 1002, 1005">IDs with Duplicates</button>
+                        <button class="sample-btn px-2 py-1 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md transition" data-sample="apple&#10;banana&#10;cherry&#10;date">Multiline</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings & Configuration Column (Middle - 3 Cols) -->
+            <div class="lg:col-span-3 flex flex-col gap-4">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-5">
+                    <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2 border-b border-slate-100 dark:border-slate-700 pb-3">
+                        <i class="fa-solid fa-sliders text-brand-600"></i>
+                        Formatting Rules
+                    </h2>
+
+                    <!-- Prefix and Suffix Inputs -->
+                    <div class="space-y-3">
+                        <div>
+                            <label for="prefixInput" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Prefix (Optional)</label>
+                            <input type="text" id="prefixInput" placeholder="e.g. '" class="w-full px-3 py-2 text-sm font-mono bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                        </div>
+
+                        <div>
+                            <label for="suffixInput" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Suffix (Optional)</label>
+                            <input type="text" id="suffixInput" placeholder="e.g. '" class="w-full px-3 py-2 text-sm font-mono bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Quick Quote & Wrap Presets -->
+                    <div>
+                        <span class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Wrap Presets</span>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button class="preset-btn p-2 text-xs font-mono bg-slate-100 dark:bg-slate-700/60 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-slate-700 rounded-lg border border-transparent hover:border-brand-300 transition text-center" data-prefix="'" data-suffix="'">'...'</button>
+                            <button class="preset-btn p-2 text-xs font-mono bg-slate-100 dark:bg-slate-700/60 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-slate-700 rounded-lg border border-transparent hover:border-brand-300 transition text-center" data-prefix='"' data-suffix='"'>"..."</button>
+                            <button class="preset-btn p-2 text-xs font-mono bg-slate-100 dark:bg-slate-700/60 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-slate-700 rounded-lg border border-transparent hover:border-brand-300 transition text-center" data-prefix="(" data-suffix=")">(...)</button>
+                            <button class="preset-btn p-2 text-xs font-mono bg-slate-100 dark:bg-slate-700/60 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-slate-700 rounded-lg border border-transparent hover:border-brand-300 transition text-center" data-prefix="[" data-suffix="]">[...]</button>
+                        </div>
+                    </div>
+
+                    <!-- Output Delimiter Selection -->
+                    <div class="pt-2 border-t border-slate-100 dark:border-slate-700">
+                        <label for="delimiterSelect" class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Output Separator</label>
+                        <select id="delimiterSelect" class="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                            <option value=", ">Comma + Space (, )</option>
+                            <option value=",">Comma Only (,)</option>
+                            <option value="\n">New Line (\n)</option>
+                            <option value=" ">Space ( )</option>
+                            <option value="; ">Semicolon (; )</option>
+                            <option value=" | ">Pipe ( | )</option>
+                            <option value="custom">Custom...</option>
+                        </select>
+
+                        <!-- Custom Delimiter Text Field (hidden by default) -->
+                        <div id="customDelimiterWrapper" class="mt-2 hidden">
+                            <input type="text" id="customDelimiterInput" placeholder="Enter custom separator" class="w-full px-3 py-1.5 text-sm font-mono bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Additional Options Checkboxes -->
+                    <div class="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-2.5">
+                        <span class="block text-xs font-medium text-slate-600 dark:text-slate-400">Data Cleanup</span>
+                        
+                        <label class="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                            <input type="checkbox" id="optTrim" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 dark:border-slate-600">
+                            Trim whitespace from items
+                        </label>
+
+                        <label class="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                            <input type="checkbox" id="optRemoveEmpty" checked class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 dark:border-slate-600">
+                            Remove empty items
+                        </label>
+
+                        <label class="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                            <input type="checkbox" id="optDeduplicate" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 dark:border-slate-600">
+                            Remove duplicates
+                        </label>
+
+                        <label class="flex items-center gap-2.5 text-xs text-slate-700 dark:text-slate-300 cursor-pointer select-none">
+                            <input type="checkbox" id="optSort" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 dark:border-slate-600">
+                            Sort alphabetically / numerically
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Column (Right - 4 Cols) -->
+            <div class="lg:col-span-4 flex flex-col gap-4">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col h-full">
+                    <div class="flex items-center justify-between mb-3">
+                        <label for="outputResult" class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-square-poll-vertical text-brand-600"></i>
+                            Formatted Output
+                        </label>
+                        <span id="outputCount" class="text-xs px-2.5 py-1 rounded-full bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 font-medium">
+                            0 items formatted
+                        </span>
+                    </div>
+
+                    <textarea id="outputResult" readonly rows="12" 
+                        class="w-full p-3.5 text-sm font-mono bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 resize-y flex-1"
+                        placeholder="Formatted output will appear here automatically..."></textarea>
+
+                    <div class="mt-4 flex gap-2">
+                        <button id="copyBtn" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-md shadow-brand-500/20 active:scale-95">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>Copy to Clipboard</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 z-50">
+        <i class="fa-solid fa-circle-check text-emerald-400 dark:text-emerald-600 text-lg"></i>
+        <span id="toastMessage" class="text-sm font-medium">Copied to clipboard!</span>
+    </div>
+
+    <script>
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeToggleIcon = document.getElementById('themeToggleIcon');
+        const themeToggleLabel = document.getElementById('themeToggleLabel');
+
+        function updateThemeToggle() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const nextMode = isDark ? 'light' : 'dark';
+            themeToggleIcon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            themeToggleLabel.textContent = isDark ? 'Light mode' : 'Dark mode';
+            themeToggleBtn.setAttribute('aria-label', `Switch to ${nextMode} mode`);
+            themeToggleBtn.title = `Switch to ${nextMode} mode`;
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            updateThemeToggle();
+            try {
+                localStorage.setItem('wrapcraft-theme', isDark ? 'dark' : 'light');
+            } catch (error) {
+                // Switching themes still works when browser storage is unavailable.
+            }
+        });
+        updateThemeToggle();
+
+        // DOM Elements
+        const rawInput = document.getElementById('rawInput');
+        const prefixInput = document.getElementById('prefixInput');
+        const suffixInput = document.getElementById('suffixInput');
+        const delimiterSelect = document.getElementById('delimiterSelect');
+        const customDelimiterWrapper = document.getElementById('customDelimiterWrapper');
+        const customDelimiterInput = document.getElementById('customDelimiterInput');
+        const outputResult = document.getElementById('outputResult');
+
+        const optTrim = document.getElementById('optTrim');
+        const optRemoveEmpty = document.getElementById('optRemoveEmpty');
+        const optDeduplicate = document.getElementById('optDeduplicate');
+        const optSort = document.getElementById('optSort');
+
+        const inputCount = document.getElementById('inputCount');
+        const outputCount = document.getElementById('outputCount');
+        const copyBtn = document.getElementById('copyBtn');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // Function to process strings and update output live
+        function processInput() {
+            const rawText = rawInput.value;
+
+            if (!rawText) {
+                outputResult.value = '';
+                inputCount.textContent = '0 items detected';
+                outputCount.textContent = '0 items formatted';
+                return;
+            }
+
+            // Split input by newlines, commas, or spaces
+            // Regular expression splits on whitespace and commas while retaining individual tokens
+            let items = rawText.split(/[\s,]+/);
+
+            inputCount.textContent = `${items.filter(Boolean).length} raw items`;
+
+            // Data cleanup options
+            if (optTrim.checked) {
+                items = items.map(item => item.trim());
+            }
+
+            if (optRemoveEmpty.checked) {
+                items = items.filter(item => item.length > 0);
+            }
+
+            if (optDeduplicate.checked) {
+                items = [...new Set(items)];
+            }
+
+            if (optSort.checked) {
+                items.sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+            }
+
+            // Apply Prefix and Suffix
+            const prefix = prefixInput.value || '';
+            const suffix = suffixInput.value || '';
+
+            const formattedItems = items.map(item => `${prefix}${item}${suffix}`);
+
+            // Determine Delimiter
+            let delimiter = delimiterSelect.value;
+            if (delimiter === 'custom') {
+                delimiter = customDelimiterInput.value;
+            } else if (delimiter === '\\n') {
+                delimiter = '\n';
+            }
+
+            // Concatenate output
+            outputResult.value = formattedItems.join(delimiter);
+            outputCount.textContent = `${formattedItems.length} items formatted`;
+        }
+
+        // Show toast feedback
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2500);
+        }
+
+        // Event Listeners for live updating
+        [rawInput, prefixInput, suffixInput, customDelimiterInput, optTrim, optRemoveEmpty, optDeduplicate, optSort].forEach(el => {
+            el.addEventListener('input', processInput);
+            el.addEventListener('change', processInput);
+        });
+
+        // Delimiter select toggle custom input
+        delimiterSelect.addEventListener('change', () => {
+            if (delimiterSelect.value === 'custom') {
+                customDelimiterWrapper.classList.remove('hidden');
+            } else {
+                customDelimiterWrapper.classList.add('hidden');
+            }
+            processInput();
+        });
+
+        // Quick Preset Buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                prefixInput.value = btn.dataset.prefix;
+                suffixInput.value = btn.dataset.suffix;
+                processInput();
+            });
+        });
+
+        // Sample Input Buttons
+        document.querySelectorAll('.sample-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                rawInput.value = btn.dataset.sample;
+                // Default preset for quick demo
+                prefixInput.value = "'";
+                suffixInput.value = "'";
+                processInput();
+            });
+        });
+
+        // Copy to clipboard feature
+        copyBtn.addEventListener('click', () => {
+            if (!outputResult.value) {
+                showToast('Nothing to copy!');
+                return;
+            }
+
+            // Fallback clipboard copying strategy for iframe safety
+            const textToCopy = outputResult.value;
+            outputResult.select();
+            
+            try {
+                document.execCommand('copy');
+                showToast('Copied to clipboard!');
+            } catch (err) {
+                showToast('Failed to copy');
+            }
+        });
+
+        // Reset All Button
+        clearAllBtn.addEventListener('click', () => {
+            rawInput.value = '';
+            prefixInput.value = '';
+            suffixInput.value = '';
+            delimiterSelect.value = ', ';
+            customDelimiterWrapper.classList.add('hidden');
+            customDelimiterInput.value = '';
+            optTrim.checked = true;
+            optRemoveEmpty.checked = true;
+            optDeduplicate.checked = false;
+            optSort.checked = false;
+            processInput();
+        });
+
+        // Initialize with default single quote preset for requested behavior
+        prefixInput.value = "'";
+        suffixInput.value = "'";
+        rawInput.value = "test001 test002 test003";
+        processInput();
+    </script>
+</body>
+</html>
