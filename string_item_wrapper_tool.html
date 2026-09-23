@@ -213,7 +213,7 @@
 
                     <textarea id="outputResult" readonly rows="12" 
                         class="w-full p-3.5 text-sm font-mono bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl outline-none text-slate-800 dark:text-slate-100 placeholder-slate-400 resize-y flex-1"
-                        placeholder="Formatted output will appear here automatically..."></textarea>
+                        placeholder="Formatted output will appear here automatically...&#10;Example: 'test001', 'test002', 'test003'"></textarea>
 
                     <div class="mt-4 flex gap-2">
                         <button id="copyBtn" class="w-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-md shadow-brand-500/20 active:scale-95">
@@ -414,10 +414,9 @@
             processInput();
         });
 
-        // Initialize with default single quote preset for requested behavior
+        // Keep the example text as a placeholder so users can type immediately.
         prefixInput.value = "'";
         suffixInput.value = "'";
-        rawInput.value = "test001 test002 test003";
         processInput();
     </script>
 </body>
